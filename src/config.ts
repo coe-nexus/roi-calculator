@@ -15,5 +15,13 @@ export const config = {
   // External APIs
   serverApiUrl : isProd
     ? process.env.SERVER_URL || "https://atlas-backend.azurewebsites.net"
-    : process.env.LOCAL_SERVER_URL || "http://localhost:8000"
+    : process.env.LOCAL_SERVER_URL || "http://localhost:8000",
+  
+  domainId : isProd
+    ? process.env.DOMAIN_ID || "1"
+    : "1",
+  
+  tenantId : isProd
+    ? process.env.TENANT_ID || "1"
+    : "1"
 };

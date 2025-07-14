@@ -6,6 +6,8 @@ import React, {
   ReactNode,
 } from "react";
 import { Material } from "@/types";
+import { getDocuments } from "@/services/api"
+import { Document } from "@/types";
 
 interface ApiContextType {
   materials: Material[] | null;
@@ -22,14 +24,48 @@ interface ApiProviderProps {
 const ApiContext = createContext<ApiContextType | undefined>(undefined);
 
 // Custom hook to use the context
+// eslint-disable-next-line react-refresh/only-export-components
 export const useApiData = (): ApiContextType => {
   const context = useContext(ApiContext);
   if (!context) {
-    throw new Error("useApiData must be used within an ApiProvider");
+    throw new Error(" must be used within an ApiProvider");
   }
   return context;
 };
 
+function getMaterialType(content_type: string): "video" | "book" | "website" | "document" {
+  // Normalize content type to lowercase and extract main type
+  const normalizedType = content_type.toLowerCase().split(';')[0].trim();
+  
+  // Video content types
+  if (normalizedType.startsWith('video/') || 
+      normalizedType.includes('video') ||
+      normalizedType === 'application/x-shockwave-flash' ||
+      normalizedType === 'application/vnd.adobe.flash-movie') {
+    return 'video';
+  }
+  
+  // Book/eBook content types
+  if (normalizedType === 'application/epub+zip' ||
+      normalizedType === 'application/x-mobipocket-ebook' ||
+      normalizedType === 'application/vnd.amazon.ebook' ||
+      normalizedType === 'application/x-fictionbook+xml' ||
+      normalizedType === 'application/vnd.ms-reader') {
+    return 'book';
+  }
+  
+  // Website content types
+  if (normalizedType === 'text/html' ||
+      normalizedType === 'application/xhtml+xml' ||
+      normalizedType === 'text/css' ||
+      normalizedType === 'application/javascript' ||
+      normalizedType === 'text/javascript') {
+    return 'website';
+  }
+  
+  // Document content types (everything else - text files, PDFs, Word docs, etc.)
+  return 'document';
+}
 // Provider component
 export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
   const [materials, setMaterials] = useState<Material[] | null>(null);
@@ -42,74 +78,25 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      // Simulate expensive API call
-      // Mock data for materials
-      const materials: Material[] = [
-        {
-          id: 1,
-          title: "Introduction to Machine Learning",
-          type: "video",
-          duration: "45 mins",
-          tags: ["AI", "ML", "Basics"],
-          date: "2024-12-01",
-        },
-        {
-          id: 2,
-          title: "Deep Learning Fundamentals",
-          type: "book",
-          pages: 320,
-          tags: ["AI", "Deep Learning", "Neural Networks"],
-          date: "2024-11-15",
-        },
-        {
-          id: 3,
-          title: "TensorFlow Documentation",
-          type: "website",
-          url: "tensorflow.org",
-          tags: ["Framework", "ML", "Tools"],
-          date: "2024-12-10",
-        },
-        {
-          id: 4,
-          title: "Neural Network Architecture",
-          type: "document",
-          pages: 45,
-          tags: ["Neural Networks", "Architecture", "AI"],
-          date: "2024-11-20",
-        },
-        {
-          id: 5,
-          title: "PyTorch Tutorial Series",
-          type: "video",
-          duration: "3 hours",
-          tags: ["Framework", "PyTorch", "Tutorial"],
-          date: "2024-12-05",
-        },
-        {
-          id: 6,
-          title: "AI Ethics and Society",
-          type: "book",
-          pages: 256,
-          tags: ["Ethics", "AI", "Society"],
-          date: "2024-10-30",
-        },
-        {
-          id: 7,
-          title: "Computer Vision Basics",
-          type: "video",
-          duration: "1.5 hours",
-          tags: ["Computer Vision", "AI", "Basics"],
-          date: "2024-12-08",
-        },
-        {
-          id: 8,
-          title: "NLP Research Papers",
-          type: "document",
-          pages: 120,
-          tags: ["NLP", "Research", "AI"],
-          date: "2024-11-25",
-        },
-      ];
+      const docs = await getDocuments()
+      const materials : Material[] = []
+      for (let i = 0;  i < docs.length; i++){
+        const doc : Document = docs[i]
+        const kws : string[] = []
+        doc.keywords.forEach((value) => {
+          kws.push(value.word)
+        })
+        materials.push(
+          {
+            id: doc.document_id,
+            title: doc.name,
+            type: getMaterialType(doc.description),
+            tags: kws,
+            date: new Date().toISOString()
+          }
+        )
+      }
+
       setMaterials(materials)
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");

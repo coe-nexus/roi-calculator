@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { config } from '../config'
+import { Document } from '@/types'
 
 const apiClient = axios.create({
     baseURL: config.serverApiUrl,
@@ -19,8 +20,9 @@ apiClient.interceptors.request.use((config) => {
 // AKA Materials
 export const getDocuments = async () => {
     try {
-        const response = await apiClient.get('/documents');
-        return response.data;
+        const response = await apiClient.get(`/domains/${config.domainId}/documents`);
+        const documents: Document[] = response.data as Document[];
+        return documents
         // find a way how to create a Document type here based on the data
     } catch (error) {
         console.error('Error fetching documents:', error);

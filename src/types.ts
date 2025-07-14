@@ -1,10 +1,16 @@
 // Types from API Calls (mirrors of Schemas from the backend)
 export interface Document {
-    document_id: number;
-    name: string;
-    description: string; // the description is really just the content type for now
-    content: string | undefined;
-    source: string | undefined;
+  document_id: number;
+  name: string;
+  description: string; // the description is really just the content type for now
+  keywords: Keyword[];
+  content: string | undefined;
+  source: string | undefined;
+}
+
+export interface Keyword {
+  keyword_id: number;
+  word: string;
 }
 
 // OTHER TYPES
