@@ -5,10 +5,10 @@ import React, {
   useState,
   ReactNode,
 } from "react";
-import { Document } from "@/types";
+import { Material } from "@/types";
 
 interface ApiContextType {
-  materials: Document[] | null;
+  materials: Material[] | null;
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
@@ -32,7 +32,7 @@ export const useApiData = (): ApiContextType => {
 
 // Provider component
 export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
-  const [materials, setMaterials] = useState<Document[] | null>(null);
+  const [materials, setMaterials] = useState<Material[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,7 +44,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
 
       // Simulate expensive API call
       // Mock data for materials
-      const materials: Document[] = [
+      const materials: Material[] = [
         {
           id: 1,
           title: "Introduction to Machine Learning",

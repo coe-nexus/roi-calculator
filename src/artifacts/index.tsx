@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Send, Book, Video, Globe, FileText, Search, Filter, ChevronRight, Home, Library, Network, Bot, User, Tag, Calendar, Clock } from 'lucide-react';
-import { TabType, Message, CategoryType, Document } from '../types'
+import { TabType, Message, CategoryType } from '../types'
 import { ApiProvider, useApiData } from '@/components/provider';
 import { GraphView } from '@/components/graph';
 
@@ -15,7 +15,7 @@ const Dashboard: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const { materials } = useApiData()
 
-  const getIcon = (type: Document['type']) => {
+  const getIcon = (type: string) => {
     switch(type) {
       case 'video': return <Video className="w-5 h-5" />;
       case 'book': return <Book className="w-5 h-5" />;
@@ -25,7 +25,7 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const getTypeColor = (type: Document['type']) => {
+  const getTypeColor = (type: string) => {
     switch(type) {
       case 'video': return 'text-purple-600 bg-purple-100';
       case 'book': return 'text-blue-600 bg-blue-100';
@@ -151,41 +151,7 @@ const Dashboard: React.FC = () => {
                   Send
                 </button>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Patient Qualification Rate (%)
-                </label>
-                <input
-                  type="range"
-                  value={qualificationRate}
-                  onChange={(e) => setQualificationRate(parseInt(e.target.value))}
-                  className="w-full"
-                  min="40"
-                  max="85"
-                  step="1"
-                />
-                <div className="flex justify-between text-xs text-gray-500 mt-1">
-                  <span>40%</span>
-                  <span>{qualificationRate}%</span>
-                  <span>85%</span>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Price per Treatment
-                </label>
-                <select
-                  value={pricePerTreatment}
-                  onChange={(e) => setPricePerTreatment(parseInt(e.target.value))}
-                  className="w-full p-2 border rounded"
-                >
-                  {priceOptions.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              
             </div>
           </>
         )}
