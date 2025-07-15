@@ -13,6 +13,25 @@ export interface Keyword {
   word: string;
 }
 
+export interface JWTInterface {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+}
+
+export interface MessageData {
+  content: string;
+  timestamp: string;
+  domain_ids: number[];
+}
+
+export interface Chat {
+  chat_id: number,
+  name: string,
+  created_at: string,
+  last_activity_at: string
+}
+
 // OTHER TYPES
 export interface Message {
   id: number;

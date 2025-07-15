@@ -3,6 +3,10 @@ import { ExternalLink } from "lucide-react";
 import { GraphNode, GraphLink } from "../types";
 import { useApiData } from "@/components/provider";
 
+import { DocumentModal } from '../components/document_modal';
+import { useDocumentModal } from '../hooks/useDocumentModal';
+
+
 export const GraphView: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | null>(null);
@@ -14,7 +18,9 @@ export const GraphView: React.FC = () => {
   const mouseRef = useRef({ x: 0, y: 0 });
 
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
-  const { materials } = useApiData();
+  const { materials, getDoc } = useApiData();
+
+  const { openedDocument, loading, error, openModal, closeModal, isOpen } = useDocumentModal(getDoc);
 
   // Initialize nodes and links
   useEffect(() => {
@@ -364,12 +370,22 @@ export const GraphView: React.FC = () => {
             {selectedNode.type === "tag" ? "Tag" : selectedNode.materialType}
           </p>
           {selectedNode.type === "material" && (
-            <button className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1">
+            <button onClick={() => {openModal(parseInt(selectedNode.id.split("-")[1]))}} className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1">
               View details <ExternalLink className="w-3 h-3" />
             </button>
           )}
         </div>
       )}
+
+      {/* Modal */}
+        <DocumentModal
+          document={openedDocument}
+          isOpen={isOpen}
+          loading={loading}
+          error={error}
+          onClose={closeModal}
+          onRetry={() => openedDocument && openModal(openedDocument.document_id)}
+        />
 
       <div className="absolute bottom-4 right-4 text-gray-400 text-xs">
         Drag nodes to reorganize • Click to select

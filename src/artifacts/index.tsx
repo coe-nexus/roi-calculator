@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Send, Book, Video, Globe, FileText, Search, Filter, ChevronRight, Home, Library, Network, Bot, User, Tag, Calendar, Clock } from 'lucide-react';
 import { TabType, Message, CategoryType } from '../types'
 import { ApiProvider, useApiData } from '@/components/provider';
 import { GraphView } from '@/components/graph';
+
+import { DocumentModal } from '../components/document_modal';
+import { useDocumentModal } from '../hooks/useDocumentModal';
+import { config } from '@/config';
 
 
 const Dashboard: React.FC = () => {
@@ -13,7 +17,20 @@ const Dashboard: React.FC = () => {
   const [inputMessage, setInputMessage] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<CategoryType>('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const { materials } = useApiData()
+  const [chatId, setChatId] = useState(1);
+  const { materials, getDoc, sendMessage, createChat } = useApiData();
+  const { openedDocument, loading, error, openModal, closeModal, isOpen } = useDocumentModal(getDoc);
+  
+  useEffect(() => {
+    const createChatId = async () => { 
+      const chat = await createChat("default chat")
+      console.log("CREATED CHAT, with ID: " + chat.chat_id)
+      setChatId(chat.chat_id)
+    }
+
+    createChatId();
+    
+  }, [createChat])
 
   const getIcon = (type: string) => {
     switch(type) {
@@ -35,21 +52,96 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (inputMessage.trim()) {
       const newMessage: Message = { id: messages.length + 1, type: 'user', content: inputMessage };
-      setMessages([...messages, newMessage]);
+      const botResponse: Message = { id: messages.length + 2, type: 'bot', content: "..."}
+      const botMessageId = botResponse.id
+      setMessages([...messages, newMessage, botResponse]);
       setInputMessage('');
-      
-      // Simulate bot response
-      setTimeout(() => {
-        const botResponse: Message = { 
-          id: messages.length + 2, 
-          type: 'bot', 
-          content: `I understand you're asking about "${inputMessage}". Let me help you explore this topic using our knowledge base...` 
-        };
-        setMessages(prev => [...prev, botResponse]);
-      }, 1000);
+      const response = await sendMessage({
+        content: inputMessage,
+        timestamp: new Date().toISOString(),
+        domain_ids: [parseInt(config.domainId)]
+
+      }, chatId)
+
+      if (!response.body){
+        console.log(response)
+        throw Error ("An error occured while sending the message")
+      }
+
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder();
+      let buffer = ''; // Buffer to hold partial lines
+
+      const processStream = async () => {
+        let messageContent = ''; // Track full message content
+        
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          
+          let eventPos;
+          while ((eventPos = buffer.indexOf('\n\n')) >= 0) {
+            const rawEvent = buffer.substring(0, eventPos);
+            buffer = buffer.substring(eventPos + 2);
+
+            let currentEvent = '';
+            let currentData = '';
+
+            const lines = rawEvent.split('\n');
+            for (const line of lines) {
+              if (line.startsWith('event: ')) {
+                currentEvent = line.substring('event: '.length).trim();
+              } else if (line.startsWith('data: ')) {
+                currentData = line.substring('data: '.length);
+              }
+            }
+
+            if (currentEvent === 'message' && currentData) {
+              try {
+                const parsed = JSON.parse(currentData);
+                if (parsed.type === 'token' && parsed.content) {
+                  messageContent += parsed.content;
+                  
+                  // Capture the current value in a local variable
+                  const currentContent = messageContent;
+                  
+                  setMessages(prevMessages =>
+                    prevMessages.map(msg =>
+                      msg.id === botMessageId
+                        ? { ...msg, content: currentContent }
+                        : msg
+                    )
+                  );
+                }
+              } catch (e) {
+                console.error('Failed to parse message data:', e);
+              }
+            } else if (currentEvent === 'taskComplete') {
+              try {
+                const taskData = JSON.parse(currentData);
+                console.log('Task Complete Event:', taskData);
+              } catch (e) {
+                console.error('Failed to parse taskComplete data:', e);
+              }
+            } else if (currentEvent === 'close') {
+              console.log('Stream closed');
+            }
+          }
+        }
+      };
+      processStream().catch(streamError => {
+            console.error("Error processing stream:", streamError);
+            // Update bot message to show error or remove it
+            setMessages(prevMessages => prevMessages.map(msg =>
+                msg.id === botMessageId ? { ...msg, content: msg.content + " [Error in stream]" } : msg
+            ));
+        });
     }
   };
 
@@ -139,7 +231,7 @@ const Dashboard: React.FC = () => {
                   type="text"
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                   placeholder="Ask Atlas anything..."
                   className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -158,7 +250,8 @@ const Dashboard: React.FC = () => {
 
         {/* Materials Explorer */}
         {activeTab === 'materials' && (
-          <div className="flex-1 overflow-y-auto p-6">
+          <>
+            <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-6xl mx-auto">
               <h2 className="text-2xl font-bold text-gray-800 mb-6">Knowledge Materials</h2>
               
@@ -239,15 +332,33 @@ const Dashboard: React.FC = () => {
                       ))}
                     </div>
                     
-                    <button className="w-full py-2 text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center justify-center gap-1">
+                    <button onClick={() => {
+                      openModal(material.id)
+                    }} className="w-full py-2 text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center justify-center gap-1">
                       View Material
                       <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>
                 ))}
               </div>
+
+              
             </div>
-          </div>
+
+            </div>
+
+            {/* Modal */}
+            <DocumentModal
+              document={openedDocument}
+              isOpen={isOpen}
+              loading={loading}
+              error={error}
+              onClose={closeModal}
+              onRetry={() => openedDocument && openModal(openedDocument.document_id)}
+            />
+          </>
+          
+          
         )}
 
         {/* Repository Graph View */}

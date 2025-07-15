@@ -1,27 +1,25 @@
-// config/index.ts
-import dotenv from 'dotenv';
-
-dotenv.config();
-
-const isDev = process.env.NODE_ENV === 'development';
-const isProd = process.env.NODE_ENV === 'production';
+// Remove dotenv import - not needed in Vite
+const isDev = import.meta.env.DEV;
+const isProd = import.meta.env.PROD;
 
 export const config = {
   // Environment
-  env: process.env.NODE_ENV || 'development',
+  env: import.meta.env.MODE || 'development',
   isDev,
   isProd,
   
   // External APIs
-  serverApiUrl : isProd
-    ? process.env.SERVER_URL || "https://atlas-backend.azurewebsites.net"
-    : process.env.LOCAL_SERVER_URL || "http://localhost:8000",
+  serverApiUrl: isProd
+    ? import.meta.env.VITE_SERVER_URL || "https://atlas-backend.azurewebsites.net/api/v1"
+    : import.meta.env.VITE_LOCAL_SERVER_URL || "http://localhost:8000/api/v1",
   
-  domainId : isProd
-    ? process.env.DOMAIN_ID || "1"
+  domainId: isProd
+    ? import.meta.env.VITE_DOMAIN_ID || "1"
     : "1",
   
-  tenantId : isProd
-    ? process.env.TENANT_ID || "1"
-    : "1"
+  tenantId: isProd
+    ? import.meta.env.VITE_TENANT_ID || "1" 
+    : "1",
+  
+  guestUID: import.meta.env.VITE_GUEST_UID || "2"
 };

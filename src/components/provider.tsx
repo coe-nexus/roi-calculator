@@ -6,14 +6,17 @@ import React, {
   ReactNode,
 } from "react";
 import { Material } from "@/types";
-import { getDocuments } from "@/services/api"
-import { Document } from "@/types";
+import { getDocuments, getDocumentContent, sendMessageStreaming, createChat } from "@/services/api"
+import { Document, MessageData, Chat } from "@/types";
 
 interface ApiContextType {
   materials: Material[] | null;
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
+  getDoc: (doc_id: number) => Promise<Document>;
+  sendMessage: (msgData: MessageData, chatId: number) => Promise<Response>;
+  createChat: (name: string) => Promise<Chat>;
 }
 
 interface ApiProviderProps {
@@ -72,7 +75,6 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Expensive API call
   const fetchData = async (): Promise<void> => {
     try {
       setLoading(true);
@@ -115,6 +117,9 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
     loading,
     error,
     refetch: fetchData,
+    getDoc: getDocumentContent,
+    sendMessage: sendMessageStreaming,
+    createChat: createChat
   };
 
   return (
