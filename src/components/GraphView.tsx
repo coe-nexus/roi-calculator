@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import { ExternalLink } from "lucide-react";
 import { GraphNode, GraphLink } from "../types";
-import { useApiData } from "@/components/provider";
+import { useApiData } from "@/components/ApiProvider";
 
-import { DocumentModal } from '../components/document_modal';
+import { DocumentModal } from './DocumentModal';
 import { useDocumentModal } from '../hooks/useDocumentModal';
 
 
