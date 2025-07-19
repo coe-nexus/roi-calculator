@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { TabType, Message, CategoryType } from '../types';
 import { ApiProvider, useApiData } from '@/components/ApiProvider';
 import { config } from '@/config';
@@ -9,24 +9,26 @@ import RepositoryView from '@/components/RepositoryView';
 
 const Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('home');
-  const [messages, setMessages] = useState<Message[]>([
-    { id: 1, type: 'bot', content: 'Hello! I\'m Atlas, your AI teacher. What would you like to learn about today?' }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<CategoryType>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [chatId, setChatId] = useState(1);
   const { materials, sendMessage, createChat } = useApiData();
 
-  useEffect(() => {
-    const createChatId = async () => {
-      const chat = await createChat("default chat");
-      console.log("CREATED CHAT, with ID: " + chat.chat_id);
-      setChatId(chat.chat_id);
-    };
 
-    createChatId();
-  }, [createChat]);
+  
+const createChatId = useCallback(async () => {
+  setMessages([])
+  setInputMessage('')
+  const chat = await createChat("default chat");
+  console.log("CREATED CHAT, with ID: " + chat.chat_id);
+  setChatId(chat.chat_id);
+}, [createChat]);
+
+useEffect(() => {
+  createChatId();
+}, [createChatId]);
 
   const handleSendMessage = async () => {
     if (inputMessage.trim()) {
@@ -114,6 +116,9 @@ const Dashboard: React.FC = () => {
       });
     }
   };
+  const handleClearMessages = async () => {
+    createChatId();
+  }
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -125,6 +130,7 @@ const Dashboard: React.FC = () => {
             inputMessage={inputMessage}
             setInputMessage={setInputMessage}
             handleSendMessage={handleSendMessage}
+            handleClearMessages={handleClearMessages}
           />
         )}
         {activeTab === 'materials' && (

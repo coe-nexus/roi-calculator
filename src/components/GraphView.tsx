@@ -6,7 +6,6 @@ import { useApiData } from "@/components/ApiProvider";
 import { DocumentModal } from './DocumentModal';
 import { useDocumentModal } from '../hooks/useDocumentModal';
 
-
 export const GraphView: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | null>(null);
@@ -15,140 +14,155 @@ export const GraphView: React.FC = () => {
   const linksRef = useRef<GraphLink[]>([]);
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
   const draggedNodeRef = useRef<GraphNode | null>(null);
-  const mouseRef = useRef({ x: 0, y: 0 });
+  
+  // Pan and zoom state
+  const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
+  const isPanningRef = useRef(false);
+  const lastMousePosRef = useRef({ x: 0, y: 0 });
 
-  const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const { materials, getDoc } = useApiData();
-
-  const { openedDocument, loading, error, openModal, closeModal, isOpen } = useDocumentModal(getDoc);
+  const { openModal } = useDocumentModal(getDoc);
 
   // Initialize nodes and links
   useEffect(() => {
-    if (!materials){
-        return;
-    }
+    if (!materials) return;
+    
+    // Count tag occurrences
+    const tagCount = new Map<string, number>();
+    materials.forEach((m) => {
+      m.tags.forEach((tag) => {
+        tagCount.set(tag, (tagCount.get(tag) || 0) + 1);
+      });
+    });
+    
+    // Only include tags that appear in multiple materials
+    const sharedTags = new Set<string>();
+    tagCount.forEach((count, tag) => {
+      if (count > 1) {
+        sharedTags.add(tag);
+      }
+    });
+    
     const tagMap = new Map<string, GraphNode>();
-    const materialNodes: GraphNode[] = materials.map((m, _) => ({
+    const materialNodes: GraphNode[] = materials.map((m) => ({
       id: `material-${m.id}`,
       label: m.title,
       type: "material" as const,
       materialType: m.type,
-      x: dimensions.width / 2 + (Math.random() - 0.5) * 300,
-      y: dimensions.height / 2 + (Math.random() - 0.5) * 300,
+      x: dimensions.width / 2 + (Math.random() - 0.5) * 200,
+      y: dimensions.height / 2 + (Math.random() - 0.5) * 200,
       vx: 0,
       vy: 0,
-      radius: 8,
-      mass: 2,
     }));
 
     const linkData: GraphLink[] = [];
     materials.forEach((m) => {
       m.tags.forEach((tag) => {
-        if (!tagMap.has(tag)) {
-          tagMap.set(tag, {
-            id: `tag-${tag}`,
-            label: tag,
-            type: "tag" as const,
-            x: dimensions.width / 2 + (Math.random() - 0.5) * 300,
-            y: dimensions.height / 2 + (Math.random() - 0.5) * 300,
-            vx: 0,
-            vy: 0,
-            radius: 6,
-            mass: 1,
+        // Only create nodes and links for shared tags
+        if (sharedTags.has(tag)) {
+          if (!tagMap.has(tag)) {
+            tagMap.set(tag, {
+              id: `tag-${tag}`,
+              label: tag,
+              type: "tag" as const,
+              x: dimensions.width / 2 + (Math.random() - 0.5) * 200,
+              y: dimensions.height / 2 + (Math.random() - 0.5) * 200,
+              vx: 0,
+              vy: 0,
+            });
+          }
+          linkData.push({
+            source: `material-${m.id}`,
+            target: `tag-${tag}`,
           });
         }
-        linkData.push({
-          source: `material-${m.id}`,
-          target: `tag-${tag}`,
-          strength: 0.3,
-        });
       });
     });
 
-    const tagNodes = Array.from(tagMap.values());
-    nodesRef.current = [...materialNodes, ...tagNodes];
+    nodesRef.current = [...materialNodes, ...Array.from(tagMap.values())];
     linksRef.current = linkData;
-  }, [dimensions]);
+    
+    // Reset simulation when data changes
+    setIsSimulating(true);
+    simulationStepsRef.current = 0;
+  }, [materials, dimensions]);
 
-  // Force simulation
+  // Add simulation state
+  const [isSimulating, setIsSimulating] = useState(true);
+  const simulationStepsRef = useRef(0);
+
+  // Simple force simulation
   const simulate = () => {
+    if (!isSimulating) return;
+    
     const nodes = nodesRef.current;
     const links = linksRef.current;
-    const alpha = 0.1;
     const centerX = dimensions.width / 2;
     const centerY = dimensions.height / 2;
+    let totalMovement = 0;
 
-    // Apply forces
     nodes.forEach((node) => {
       if (draggedNodeRef.current?.id !== node.id) {
-        // Reset forces
-        node.fx = 0;
-        node.fy = 0;
-
         // Center force
-        node.fx += (centerX - node.x) * 0.01;
-        node.fy += (centerY - node.y) * 0.01;
+        const dx = centerX - node.x;
+        const dy = centerY - node.y;
+        node.vx += dx * 0.0001;
+        node.vy += dy * 0.0001;
 
-        // Repulsion between nodes
+        // Repulsion
         nodes.forEach((other) => {
           if (node.id !== other.id) {
             const dx = node.x - other.x;
             const dy = node.y - other.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            if (distance < 200 && distance > 0) {
-              const force = (1 / distance) * 50;
-              if (node.fx && node.fy) {
-                node.fx += (dx / distance) * force;
-                node.fy += (dy / distance) * force;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 120 && dist > 0) {
+              const force = 200 / (dist * dist);
+              node.vx += (dx / dist) * force;
+              node.vy += (dy / dist) * force;
+            }
+          }
+        });
+
+        // Link forces
+        links.forEach((link) => {
+          if (link.source === node.id || link.target === node.id) {
+            const other = nodes.find(n => 
+              n.id === (link.source === node.id ? link.target : link.source)
+            );
+            if (other) {
+              const dx = other.x - node.x;
+              const dy = other.y - node.y;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+              const idealDist = 80;
+              if (dist > 0) {
+                const force = (dist - idealDist) * 0.01;
+                node.vx += (dx / dist) * force;
+                node.vy += (dy / dist) * force;
               }
             }
           }
         });
 
-        // Apply velocity
-        node.vx = (node.vx + (node.fx || 0) * alpha) * 0.9;
-        node.vy = (node.vy + (node.fy || 0) * alpha) * 0.9;
+        // Apply velocity with stronger damping
+        node.vx *= 0.7;
+        node.vy *= 0.7;
+        
+        // Stop tiny movements
+        if (Math.abs(node.vx) < 0.01) node.vx = 0;
+        if (Math.abs(node.vy) < 0.01) node.vy = 0;
+        
         node.x += node.vx;
         node.y += node.vy;
-
-        // Bounds
-        node.x = Math.max(
-          node.radius,
-          Math.min(dimensions.width - node.radius, node.x)
-        );
-        node.y = Math.max(
-          node.radius,
-          Math.min(dimensions.height - node.radius, node.y)
-        );
+        
+        totalMovement += Math.abs(node.vx) + Math.abs(node.vy);
       }
     });
 
-    // Link forces
-    links.forEach((link) => {
-      const source = nodes.find((n) => n.id === link.source);
-      const target = nodes.find((n) => n.id === link.target);
-      if (source && target) {
-        const dx = target.x - source.x;
-        const dy = target.y - source.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        const idealDistance = 100;
-
-        if (distance > 0) {
-          const force = (distance - idealDistance) * link.strength * alpha;
-          const fx = (dx / distance) * force;
-          const fy = (dy / distance) * force;
-
-          if (draggedNodeRef.current?.id !== source.id) {
-            source.vx += fx / source.mass;
-            source.vy += fy / source.mass;
-          }
-          if (draggedNodeRef.current?.id !== target.id) {
-            target.vx -= fx / target.mass;
-            target.vy -= fy / target.mass;
-          }
-        }
-      }
-    });
+    // Stop simulation when movement is minimal
+    simulationStepsRef.current++;
+    if (totalMovement < 0.1 || simulationStepsRef.current > 300) {
+      setIsSimulating(false);
+    }
   };
 
   // Animation loop
@@ -159,17 +173,26 @@ export const GraphView: React.FC = () => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    canvas.width = dimensions.width;
-    canvas.height = dimensions.height;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = dimensions.width * dpr;
+    canvas.height = dimensions.height * dpr;
+    canvas.style.width = dimensions.width + 'px';
+    canvas.style.height = dimensions.height + 'px';
+    ctx.scale(dpr, dpr);
 
     const render = () => {
-      ctx.fillStyle = "#0a0a0a";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, dimensions.width, dimensions.height);
 
-      // Run simulation
+      ctx.save();
+      ctx.translate(transform.x, transform.y);
+      ctx.scale(transform.scale, transform.scale);
+
       simulate();
 
       // Draw links
+      ctx.strokeStyle = "#ddd";
+      ctx.lineWidth = 1;
       linksRef.current.forEach((link) => {
         const source = nodesRef.current.find((n) => n.id === link.source);
         const target = nodesRef.current.find((n) => n.id === link.target);
@@ -177,143 +200,143 @@ export const GraphView: React.FC = () => {
           ctx.beginPath();
           ctx.moveTo(source.x, source.y);
           ctx.lineTo(target.x, target.y);
-
-          // Highlight connected links
-          if (hoveredNode?.id === source.id || hoveredNode?.id === target.id) {
-            ctx.strokeStyle = "rgba(147, 197, 253, 0.6)";
-            ctx.lineWidth = 2;
-          } else {
-            ctx.strokeStyle = "rgba(75, 85, 99, 0.3)";
-            ctx.lineWidth = 1;
-          }
           ctx.stroke();
         }
       });
 
       // Draw nodes
       nodesRef.current.forEach((node) => {
+        const isHovered = hoveredNode?.id === node.id;
+        const radius = node.type === "tag" ? 8 : 12;
+        
         ctx.beginPath();
-        ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
-
-        // Node colors
-        if (node.type === "tag") {
-          ctx.fillStyle = "#fbbf24";
-        } else {
-          switch (node.materialType) {
-            case "video":
-              ctx.fillStyle = "#c084fc";
-              break;
-            case "book":
-              ctx.fillStyle = "#60a5fa";
-              break;
-            case "website":
-              ctx.fillStyle = "#4ade80";
-              break;
-            case "document":
-              ctx.fillStyle = "#fb923c";
-              break;
-            default:
-              ctx.fillStyle = "#9ca3af";
-          }
-        }
-
-        // Hover/selection effects
-        if (hoveredNode?.id === node.id || selectedNode?.id === node.id) {
-          ctx.shadowBlur = 15;
-          ctx.shadowColor = ctx.fillStyle;
-        } else {
-          ctx.shadowBlur = 0;
-        }
-
+        ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = node.type === "tag" ? "#cccccc" : "#333333";
         ctx.fill();
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
 
-        // Draw label on hover or selection
-        if (hoveredNode?.id === node.id || selectedNode?.id === node.id) {
-          ctx.fillStyle = "#ffffff";
-          ctx.font = "12px Inter, sans-serif";
+        // Labels
+        if ((node.type === "tag" && isHovered) || (node.type === "material" && isHovered)) {
+          ctx.fillStyle = "#666666";
+          ctx.font = node.type === "tag" ? "10px Inter, sans-serif" : "12px Inter, sans-serif";
           ctx.textAlign = "center";
-          ctx.textBaseline = "bottom";
-          ctx.fillText(node.label, node.x, node.y - node.radius - 5);
+          ctx.textBaseline = "top";
+          const label = node.type === "tag" ? `#${node.label}` : node.label;
+          ctx.fillText(label, node.x, node.y + radius + 5);
         }
       });
 
+      ctx.restore();
       animationRef.current = requestAnimationFrame(render);
     };
 
     render();
-
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
-  }, [dimensions, hoveredNode, selectedNode]);
+  }, [dimensions, hoveredNode, transform]);
 
   // Mouse interactions
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    const screenToWorld = (screenX: number, screenY: number) => ({
+      x: (screenX - transform.x) / transform.scale,
+      y: (screenY - transform.y) / transform.scale
+    });
+
+    const findNodeAt = (x: number, y: number) => {
+      return nodesRef.current.find((n) => {
+        const dx = x - n.x;
+        const dy = y - n.y;
+        const radius = n.type === "tag" ? 8 : 12;
+        return Math.sqrt(dx * dx + dy * dy) < radius + 5;
+      });
+    };
+
     const handleMouseMove = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      mouseRef.current = { x, y };
+      const screenX = e.clientX - rect.left;
+      const screenY = e.clientY - rect.top;
+      const worldPos = screenToWorld(screenX, screenY);
 
-      if (draggedNodeRef.current) {
-        draggedNodeRef.current.x = x;
-        draggedNodeRef.current.y = y;
+      if (isPanningRef.current && !draggedNodeRef.current) {
+        const dx = screenX - lastMousePosRef.current.x;
+        const dy = screenY - lastMousePosRef.current.y;
+        setTransform(prev => ({ ...prev, x: prev.x + dx, y: prev.y + dy }));
+        lastMousePosRef.current = { x: screenX, y: screenY };
+      } else if (draggedNodeRef.current) {
+        draggedNodeRef.current.x = worldPos.x;
+        draggedNodeRef.current.y = worldPos.y;
         draggedNodeRef.current.vx = 0;
         draggedNodeRef.current.vy = 0;
       } else {
-        const node = nodesRef.current.find((n) => {
-          const dx = x - n.x;
-          const dy = y - n.y;
-          return Math.sqrt(dx * dx + dy * dy) < n.radius + 5;
-        });
+        const node = findNodeAt(worldPos.x, worldPos.y);
         setHoveredNode(node || null);
-        canvas.style.cursor = node ? "pointer" : "default";
+        canvas.style.cursor = node ? "pointer" : "grab";
       }
     };
 
     const handleMouseDown = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-
-      const node = nodesRef.current.find((n) => {
-        const dx = x - n.x;
-        const dy = y - n.y;
-        return Math.sqrt(dx * dx + dy * dy) < n.radius + 5;
-      });
+      const screenX = e.clientX - rect.left;
+      const screenY = e.clientY - rect.top;
+      const worldPos = screenToWorld(screenX, screenY);
+      const node = findNodeAt(worldPos.x, worldPos.y);
 
       if (node) {
         draggedNodeRef.current = node;
-        setSelectedNode(node);
+        // Restart simulation when dragging
+        setIsSimulating(true);
+        simulationStepsRef.current = 0;
+        if (node.type === "material") {
+          openModal(parseInt(node.id.split("-")[1]));
+        }
+      } else {
+        isPanningRef.current = true;
+        lastMousePosRef.current = { x: screenX, y: screenY };
       }
     };
 
     const handleMouseUp = () => {
       draggedNodeRef.current = null;
+      isPanningRef.current = false;
     };
 
-    const handleMouseLeave = () => {
-      setHoveredNode(null);
-      draggedNodeRef.current = null;
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const screenX = e.clientX - rect.left;
+      const screenY = e.clientY - rect.top;
+      
+      const scaleFactor = e.deltaY < 0 ? 1.1 : 0.9;
+      const newScale = Math.max(0.25, Math.min(3, transform.scale * scaleFactor));
+      
+      const worldX = (screenX - transform.x) / transform.scale;
+      const worldY = (screenY - transform.y) / transform.scale;
+      
+      setTransform({
+        x: screenX - worldX * newScale,
+        y: screenY - worldY * newScale,
+        scale: newScale
+      });
     };
 
     canvas.addEventListener("mousemove", handleMouseMove);
     canvas.addEventListener("mousedown", handleMouseDown);
     canvas.addEventListener("mouseup", handleMouseUp);
-    canvas.addEventListener("mouseleave", handleMouseLeave);
+    canvas.addEventListener("wheel", handleWheel, { passive: false });
 
     return () => {
       canvas.removeEventListener("mousemove", handleMouseMove);
       canvas.removeEventListener("mousedown", handleMouseDown);
       canvas.removeEventListener("mouseup", handleMouseUp);
-      canvas.removeEventListener("mouseleave", handleMouseLeave);
+      canvas.removeEventListener("wheel", handleWheel);
     };
-  }, []);
+  }, [transform, openModal]);
 
   // Handle resize
   useEffect(() => {
@@ -333,63 +356,8 @@ export const GraphView: React.FC = () => {
   }, []);
 
   return (
-    <div className="relative w-full h-full bg-black rounded-lg overflow-hidden">
+    <div className="relative w-full h-full bg-white rounded-lg shadow overflow-hidden">
       <canvas ref={canvasRef} className="w-full h-full" />
-
-      {/* Controls */}
-      <div className="absolute top-4 left-4 bg-gray-900 bg-opacity-80 backdrop-blur p-3 rounded-lg">
-        <div className="text-white text-sm space-y-2">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-purple-400 rounded-full"></div>
-            <span>Videos</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-blue-400 rounded-full"></div>
-            <span>Books</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-            <span>Websites</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-orange-400 rounded-full"></div>
-            <span>Documents</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-            <span>Tags</span>
-          </div>
-        </div>
-      </div>
-
-      {selectedNode && (
-        <div className="absolute top-4 right-4 bg-gray-900 bg-opacity-90 backdrop-blur text-white p-4 rounded-lg max-w-xs">
-          <h3 className="font-semibold text-lg mb-2">{selectedNode.label}</h3>
-          <p className="text-sm text-gray-300 mb-3">
-            Type:{" "}
-            {selectedNode.type === "tag" ? "Tag" : selectedNode.materialType}
-          </p>
-          {selectedNode.type === "material" && (
-            <button onClick={() => {openModal(parseInt(selectedNode.id.split("-")[1]))}} className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1">
-              View details <ExternalLink className="w-3 h-3" />
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Modal */}
-        <DocumentModal
-          document={openedDocument}
-          isOpen={isOpen}
-          loading={loading}
-          error={error}
-          onClose={closeModal}
-          onRetry={() => openedDocument && openModal(openedDocument.document_id)}
-        />
-
-      <div className="absolute bottom-4 right-4 text-gray-400 text-xs">
-        Drag nodes to reorganize • Click to select
-      </div>
     </div>
   );
 };
