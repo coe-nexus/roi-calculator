@@ -2,6 +2,7 @@ import React from 'react';
 import { Send, User, Bot, Trash } from 'lucide-react';
 import { Message } from '../types';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface ChatInterfaceProps {
   messages: Message[];
@@ -29,6 +30,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, inputMessage, s
                 }`}>
                   <div className="prose prose-sm max-w-none">
                     <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
                       components={{
                       h1: ({children}) => <h1 className="text-2xl font-bold mb-4">{children}</h1>,
                       h2: ({children}) => <h2 className="text-xl font-bold mb-3">{children}</h2>,
@@ -37,12 +39,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, inputMessage, s
                       ul: ({children}) => <ul className="list-disc list-inside mb-2">{children}</ul>,
                       ol: ({children}) => <ol className="list-decimal list-inside mb-2">{children}</ol>,
                       li: ({children}) => <li className="mb-1">{children}</li>,
-                      table: ({children}) => <table className="border-collapse border border-gray-300 mb-4">{children}</table>,
+                      table: ({children}) => (
+                        <div className="overflow-x-auto mb-4">
+                          <table className="min-w-full border-collapse border border-gray-300">{children}</table>
+                        </div>
+                      ),
                       thead: ({children}) => <thead className="bg-gray-100">{children}</thead>,
                       tbody: ({children}) => <tbody>{children}</tbody>,
                       tr: ({children}) => <tr className="border-b border-gray-300">{children}</tr>,
-                      th: ({children}) => <th className="border border-gray-300 px-4 py-2 text-left font-semibold">{children}</th>,
-                      td: ({children}) => <td className="border border-gray-300 px-4 py-2">{children}</td>,
+                      th: ({children}) => <th className="border border-gray-300 px-3 py-2 text-left font-semibold text-sm">{children}</th>,
+                      td: ({children}) => <td className="border border-gray-300 px-3 py-2 text-sm">{children}</td>,
                       code: ({inline, children}) => 
                         inline ? 
                         <code className="bg-gray-100 px-1 py-0.5 rounded text-sm">{children}</code> :
@@ -92,5 +98,4 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, inputMessage, s
     </>
   );
 };
-
 export default ChatInterface;
