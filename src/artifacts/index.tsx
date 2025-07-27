@@ -9,6 +9,7 @@ import RepositoryView from '@/components/RepositoryView';
 
 const Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('home');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<CategoryType>('all');
@@ -129,9 +130,32 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-      <div className="flex-1 flex flex-col">
+    <div className="flex h-screen bg-gray-50 md:flex-row flex-col overflow-hidden">
+      <div className="md:hidden p-4">
+        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M4 6h16M4 12h16m-7 6h7"
+            ></path>
+          </svg>
+        </button>
+      </div>
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        isOpen={isSidebarOpen}
+        setIsOpen={setIsSidebarOpen}
+      />
+      <div className="flex-1 flex flex-col overflow-hidden">
         {activeTab === 'home' && (
           <ChatInterface
             messages={messages}

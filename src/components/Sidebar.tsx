@@ -5,20 +5,49 @@ import { TabType } from '../types';
 interface SidebarProps {
   activeTab: TabType;
   setActiveTab: (tab: TabType) => void;
+  isOpen: boolean;
+  setIsOpen: (isOpen: boolean) => void;
 }
 
 // TODO: Backend Placeholders
 const EXPERT_NAME = "Izzy Kiver"
 const DOMAIN_NAME = "Philosophy of Success"
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
+const Sidebar: React.FC<SidebarProps> = ({
+  activeTab,
+  setActiveTab,
+  isOpen,
+  setIsOpen,
+}) => {
   return (
-    <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
-      <div className="p-4 border-b border-gray-200">
-        <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-          {EXPERT_NAME}
-        </h1>
-        <p className="text-sm text-gray-600 mt-1">{DOMAIN_NAME}</p>
+    <div
+      className={`w-64 bg-white border-r border-gray-200 flex flex-col transform ${
+        isOpen ? 'translate-x-0' : '-translate-x-full'
+      } md:translate-x-0 transition-transform duration-300 ease-in-out fixed md:relative h-full z-10`}
+    >
+      <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            {EXPERT_NAME}
+          </h1>
+          <p className="text-sm text-gray-600 mt-1">{DOMAIN_NAME}</p>
+        </div>
+        <button onClick={() => setIsOpen(false)} className="md:hidden">
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M6 18L18 6M6 6l12 12"
+            ></path>
+          </svg>
+        </button>
       </div>
       
       <nav className="flex-1 p-4">

@@ -17,12 +17,12 @@ interface ChatInterfaceProps {
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, addMessage, inputMessage, setInputMessage, handleSendMessage, handleClearMessages }) => {
   return (
-    <>
+    <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-3xl mx-auto">
           {messages.map((message) => (
             <div key={message.id} className={`mb-4 flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`flex gap-3 max-w-[70%] ${message.type === 'user' ? 'flex-row-reverse' : ''}`}>
+              <div className={`flex gap-3 max-w-[90%] ${message.type === 'user' ? 'flex-row-reverse' : ''}`}>
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                   message.type === 'user' ? 'bg-blue-600' : 'bg-gray-200'
                 }`}>
@@ -60,10 +60,20 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, addMessage, inp
                       tr: ({children}) => <tr className="border-b border-gray-300">{children}</tr>,
                       th: ({children}) => <th className="border border-gray-300 px-3 py-2 text-left font-semibold text-sm">{children}</th>,
                       td: ({children}) => <td className="border border-gray-300 px-3 py-2 text-sm">{children}</td>,
-                      code: ({inline, children}) => 
-                        inline ? 
-                        <code className="bg-gray-100 px-1 py-0.5 rounded text-sm">{children}</code> :
-                        <pre className="bg-gray-100 p-3 rounded overflow-x-auto mb-2"><code>{children}</code></pre>,
+                      code: ({node: _node, className, children, ...props}) => {
+                        const match = /language-(\w+)/.exec(className || '')
+                        return match ? (
+                          <pre className="bg-gray-100 p-3 rounded overflow-x-auto mb-2">
+                            <code className={className} {...props}>
+                              {children}
+                            </code>
+                          </pre>
+                        ) : (
+                          <code className="bg-gray-100 px-1 py-0.5 rounded text-sm" {...props}>
+                            {children}
+                          </code>
+                        )
+                      },
                       blockquote: ({children}) => <blockquote className="border-l-4 border-gray-300 pl-4 italic mb-2">{children}</blockquote>,
                       a: ({href, children}) => <a href={href} className="text-blue-500 hover:underline">{children}</a>,
                       strong: ({children}) => <strong className="font-bold">{children}</strong>,
@@ -81,7 +91,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, addMessage, inp
       </div>
       
       <div className="border-t border-gray-200 p-4">
-        <div className="max-w-3xl mx-auto flex gap-3">
+        <div className="max-w-3xl mx-auto flex flex-wrap gap-3">
           <input
             type="text"
             value={inputMessage}
@@ -92,17 +102,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, addMessage, inp
           />
           <button
             onClick={handleSendMessage}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+            className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
           >
             <Send className="w-5 h-5" />
-            Send
+            <span className="hidden sm:inline">Send</span>
           </button>
           <button
             onClick={handleClearMessages}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+            className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
           >
             <Trash className="w-5 h-5" />
-            Clear
+            <span className="hidden sm:inline">Clear</span>
           </button>
           <AgentCall
             knowledge_reference={knowledgeReference}
@@ -113,7 +123,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, addMessage, inp
           </AgentCall>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 export default ChatInterface;
