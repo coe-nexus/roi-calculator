@@ -1,8 +1,7 @@
 import axios from 'axios';
 import { config } from '../config'
-import { Document, JWTInterface } from '@/types'
 import axiosRetry from 'axios-retry'
-import { MessageData, Chat } from '@/types';
+import { MessageData, Chat, VectorDBQueryResponse, Document, JWTInterface } from '@/types';
 
 const apiClient = axios.create({
     baseURL: config.serverApiUrl,
@@ -136,6 +135,24 @@ export const createChat = async (name: string) => {
         return response.data as Chat
     } catch (e) {
         console.log("Error when trying to create a chat", e)
+        throw e
+    }
+}
+
+
+
+export const queryVectorDB = async (query: string) => {
+    try {
+        const response = await apiClient.post(
+            'domains/' + config.domainId + "/query",
+            {
+                query: query
+            }
+        )
+
+        return response.data as VectorDBQueryResponse
+    } catch (e) {
+        console.log("Error when trying to query the vector database", e)
         throw e
     }
 }

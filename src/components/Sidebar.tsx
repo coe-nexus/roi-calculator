@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Library, Network, Bot } from 'lucide-react';
+import { Home, Library, Network } from 'lucide-react';
 import { TabType } from '../types';
 
 interface SidebarProps {
@@ -7,15 +7,18 @@ interface SidebarProps {
   setActiveTab: (tab: TabType) => void;
 }
 
+// TODO: Backend Placeholders
+const EXPERT_NAME = "Izzy Kiver"
+const DOMAIN_NAME = "Philosophy of Success"
+
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   return (
     <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
       <div className="p-4 border-b border-gray-200">
         <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-          <Bot className="w-8 h-8 text-blue-600" />
-          Atlas
+          {EXPERT_NAME}
         </h1>
-        <p className="text-sm text-gray-600 mt-1">AI Teacher Platform</p>
+        <p className="text-sm text-gray-600 mt-1">{DOMAIN_NAME}</p>
       </div>
       
       <nav className="flex-1 p-4">

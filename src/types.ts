@@ -8,6 +8,10 @@ export interface Document {
   source: string | undefined;
 }
 
+export interface VectorDBQueryResponse {
+  response: string;
+}
+
 export interface Keyword {
   keyword_id: number;
   word: string;

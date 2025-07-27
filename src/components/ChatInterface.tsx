@@ -1,8 +1,10 @@
 import React from 'react';
-import { Send, User, Bot, Trash } from 'lucide-react';
+import { Send, User, Trash } from 'lucide-react';
 import { Message } from '../types';
 import ReactMarkdown from 'react-markdown';
+import AgentCall from './AgentCall';
 import remarkGfm from 'remark-gfm';
+import { knowledgeReference } from '@/services/tools';
 
 interface ChatInterfaceProps {
   messages: Message[];
@@ -10,9 +12,10 @@ interface ChatInterfaceProps {
   setInputMessage: (message: string) => void;
   handleSendMessage: () => void;
   handleClearMessages: () => void;
+  addMessage: (message: {content: string, type: "user" | "bot"}) => void;
 }
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, inputMessage, setInputMessage, handleSendMessage, handleClearMessages }) => {
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, addMessage, inputMessage, setInputMessage, handleSendMessage, handleClearMessages }) => {
   return (
     <>
       <div className="flex-1 overflow-y-auto p-6">
@@ -23,7 +26,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, inputMessage, s
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                   message.type === 'user' ? 'bg-blue-600' : 'bg-gray-200'
                 }`}>
-                  {message.type === 'user' ? <User className="w-6 h-6 text-white" /> : <Bot className="w-6 h-6 text-gray-600" />}
+                  
+                  {message.type === 'user' ? 
+                    <User className="w-6 h-6 text-white" /> : 
+                    <img 
+                      src="izzypfp.png" 
+                      alt="Izzy's profile picture"
+                      className="w-6 h-6 rounded-full object-cover"
+                    />
+                  }
                 </div>
                 <div className={`rounded-lg px-4 py-3 ${
                   message.type === 'user' ? 'bg-blue-600 text-white' : 'bg-white border border-gray-200'
@@ -93,6 +104,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, inputMessage, s
             <Trash className="w-5 h-5" />
             Clear
           </button>
+          <AgentCall
+            knowledge_reference={knowledgeReference}
+            addMessage={addMessage}
+            handleClearMessages={handleClearMessages}
+            >
+
+          </AgentCall>
         </div>
       </div>
     </>

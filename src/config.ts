@@ -21,5 +21,7 @@ export const config = {
     ? import.meta.env.VITE_TENANT_ID || "1" 
     : "1",
   
-  guestUID: import.meta.env.VITE_GUEST_UID || "2"
+  guestUID: import.meta.env.VITE_GUEST_UID || "2",
+
+  agentID: import.meta.env.VITE_AGENT_ID || "agent_9901k0xrd56feh7vzewmg19vp0ne"
 };

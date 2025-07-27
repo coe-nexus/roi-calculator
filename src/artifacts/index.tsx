@@ -18,17 +18,28 @@ const Dashboard: React.FC = () => {
 
 
   
-const createChatId = useCallback(async () => {
-  setMessages([])
-  setInputMessage('')
-  const chat = await createChat("default chat");
-  console.log("CREATED CHAT, with ID: " + chat.chat_id);
-  setChatId(chat.chat_id);
-}, [createChat]);
+  const createChatId = useCallback(async () => {
+    setMessages([])
+    setInputMessage('')
+    const chat = await createChat("default chat");
+    console.log("CREATED CHAT, with ID: " + chat.chat_id);
+    setChatId(chat.chat_id);
+  }, [createChat]);
 
-useEffect(() => {
-  createChatId();
-}, [createChatId]);
+  const addMessage = useCallback((newMsg: {content: string, type: "user" | "bot"}) => {
+    setMessages(prevMessages => {
+      const msg: Message = {
+        content: newMsg.content,
+        type: newMsg.type,
+        id: prevMessages.length + 1 // Use current length
+      }
+      return [...prevMessages, msg];
+    })
+  }, []) // No dependencies needed!
+
+  useEffect(() => {
+    createChatId();
+  }, [createChatId]);
 
   const handleSendMessage = async () => {
     if (inputMessage.trim()) {
@@ -116,9 +127,6 @@ useEffect(() => {
       });
     }
   };
-  const handleClearMessages = async () => {
-    createChatId();
-  }
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -130,7 +138,8 @@ useEffect(() => {
             inputMessage={inputMessage}
             setInputMessage={setInputMessage}
             handleSendMessage={handleSendMessage}
-            handleClearMessages={handleClearMessages}
+            handleClearMessages={createChatId}
+            addMessage={addMessage}
           />
         )}
         {activeTab === 'materials' && (
