@@ -3,6 +3,7 @@ import { config } from '../config'
 import axiosRetry from 'axios-retry'
 import { MessageData, Chat, VectorDBQueryResponse, Document, JWTInterface } from '@/types';
 
+
 const apiClient = axios.create({
     baseURL: config.serverApiUrl,
     headers: {
@@ -51,6 +52,8 @@ axiosRetry(apiClient, {
 
 async function getGuestToken() {
     try {
+
+        
         // Create a separate axios instance for auth calls to avoid retry loop
         const authClient = axios.create({ baseURL: apiClient.defaults.baseURL });
         const response = await authClient.get('auth/guest');
@@ -58,6 +61,7 @@ async function getGuestToken() {
         localStorage.setItem("authToken", tokens.access_token);
         return tokens.access_token;
     } catch (error) {
+        console.error(`Server API URL: ${config.serverApiUrl}`)
         console.error('Error getting guest token:', error);
         throw error;
     }

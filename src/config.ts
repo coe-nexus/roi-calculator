@@ -2,6 +2,8 @@
 const isDev = import.meta.env.DEV;
 const isProd = import.meta.env.PROD;
 
+console.log(`isDev: ${isDev} isProd: ${isProd}`)
+
 export const config = {
   // Environment
   env: import.meta.env.MODE || 'development',

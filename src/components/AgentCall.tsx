@@ -17,7 +17,7 @@ async function requestMicrophonePermission() {
 
 
 export default function AgentCall(
-    {knowledge_reference, addMessage, handleClearMessages} 
+    {knowledge_reference: _knowledge_reference, addMessage, handleClearMessages} 
     :   {knowledge_reference: typeof knowledgeReference,
         addMessage: (message: {content: string, type: "user" | "bot"}) => void,
         handleClearMessages: () => void})
@@ -46,15 +46,15 @@ export default function AgentCall(
             alert('No permission')
             return;
         }
-
+        
         await conversation.startSession({
             agentId: config.agentID,
             connectionType: "webrtc",
-            clientTools: {
-                knowledge_reference
+            dynamicVariables: {
+                "auth_token" : `Bearer ${localStorage.getItem("authToken")}` || "an error happened"
             }
         })
-    }, [conversation, knowledge_reference])
+    }, [conversation])
 
     const stopConversation = useCallback(async () => {
         await conversation.endSession()

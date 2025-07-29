@@ -1,9 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
-import { ExternalLink } from "lucide-react";
 import { GraphNode, GraphLink } from "../types";
 import { useApiData } from "@/components/ApiProvider";
 
-import { DocumentModal } from './DocumentModal';
 import { useDocumentModal } from '../hooks/useDocumentModal';
 
 export const GraphView: React.FC = () => {
@@ -53,6 +51,8 @@ export const GraphView: React.FC = () => {
       y: dimensions.height / 2 + (Math.random() - 0.5) * 200,
       vx: 0,
       vy: 0,
+      radius: 12,
+      mass: 2,
     }));
 
     const linkData: GraphLink[] = [];
@@ -69,11 +69,14 @@ export const GraphView: React.FC = () => {
               y: dimensions.height / 2 + (Math.random() - 0.5) * 200,
               vx: 0,
               vy: 0,
+              radius: 8,
+              mass: 1,
             });
           }
           linkData.push({
             source: `material-${m.id}`,
             target: `tag-${tag}`,
+            strength: 0.1,
           });
         }
       });
