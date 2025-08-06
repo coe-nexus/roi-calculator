@@ -1,6 +1,7 @@
 import React from 'react';
 import { Home, Library, Network } from 'lucide-react';
 import { TabType } from '../types';
+import { config } from '../config';
 
 interface SidebarProps {
   activeTab: TabType;
@@ -9,15 +10,13 @@ interface SidebarProps {
   setIsOpen: (isOpen: boolean) => void;
 }
 
-// TODO: Backend Placeholders
-const EXPERT_NAME = "Izzy Kiver"
-const DOMAIN_NAME = "Philosophy of Success"
+
 
 const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   setActiveTab,
   isOpen,
-  setIsOpen,
+  setIsOpen
 }) => {
   return (
     <div
@@ -28,9 +27,9 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className="p-4 border-b border-gray-200 flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            {EXPERT_NAME}
+            {config.tenant?.title}
           </h1>
-          <p className="text-sm text-gray-600 mt-1">{DOMAIN_NAME}</p>
+          <p className="text-sm text-gray-600 mt-1">{config.tenant?.description}</p>
         </div>
         <button onClick={() => setIsOpen(false)} className="md:hidden">
           <svg

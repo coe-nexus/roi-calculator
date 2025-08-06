@@ -1,7 +1,6 @@
 import { useConversation } from '@elevenlabs/react';
 import { useCallback } from 'react';
 import { config } from '@/config';
-import { knowledgeReference } from '@/services/tools';
 
 
 async function requestMicrophonePermission() {
@@ -17,8 +16,8 @@ async function requestMicrophonePermission() {
 
 
 export default function AgentCall(
-    {knowledge_reference: _knowledge_reference, addMessage, handleClearMessages} 
-    :   {knowledge_reference: typeof knowledgeReference,
+    {addMessage, handleClearMessages} 
+    :   {
         addMessage: (message: {content: string, type: "user" | "bot"}) => void,
         handleClearMessages: () => void})
     {
@@ -48,7 +47,7 @@ export default function AgentCall(
         }
         
         await conversation.startSession({
-            agentId: config.agentID,
+            agentId: config.tenant?.elevenlabs_agent_id || "error",
             connectionType: "webrtc",
             dynamicVariables: {
                 "auth_token" : `Bearer ${localStorage.getItem("authToken")}` || "an error happened"

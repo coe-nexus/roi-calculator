@@ -6,16 +6,18 @@ import React, {
   ReactNode,
 } from "react";
 import { Material } from "@/types";
-import { getDocuments, getDocumentContent, sendMessageStreaming, createChat } from "@/services/api"
+import { getDocuments, getDocumentContent, sendMessageStreaming, createChat, getDomainId, getTenantPfp } from "@/services/api"
 import { Document, MessageData, Chat } from "@/types";
 
 interface ApiContextType {
   materials: Material[] | null;
+  domainId: number | null;
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
   getDoc: (doc_id: number) => Promise<Document>;
   sendMessage: (msgData: MessageData, chatId: number) => Promise<Response>;
+  getTenantPfp: typeof getTenantPfp;
   createChat: (name: string) => Promise<Chat>;
 }
 
@@ -27,7 +29,6 @@ interface ApiProviderProps {
 const ApiContext = createContext<ApiContextType | undefined>(undefined);
 
 // Custom hook to use the context
-// eslint-disable-next-line react-refresh/only-export-components
 export const useApiData = (): ApiContextType => {
   const context = useContext(ApiContext);
   if (!context) {
@@ -74,12 +75,14 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
   const [materials, setMaterials] = useState<Material[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [domainId, setDomainId] = useState<number | null>(null);
 
   const fetchData = async (): Promise<void> => {
     try {
       setLoading(true);
       setError(null);
-
+      setDomainId(await getDomainId())
+      
       const docs = await getDocuments()
       const materials : Material[] = []
       for (let i = 0;  i < docs.length; i++){
@@ -114,10 +117,12 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
 
   const contextValue: ApiContextType = {
     materials,
+    domainId,
     loading,
     error,
     refetch: fetchData,
     getDoc: getDocumentContent,
+    getTenantPfp,
     sendMessage: sendMessageStreaming,
     createChat: createChat
   };

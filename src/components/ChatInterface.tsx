@@ -4,7 +4,8 @@ import { Message } from '../types';
 import ReactMarkdown from 'react-markdown';
 import AgentCall from './AgentCall';
 import remarkGfm from 'remark-gfm';
-import { knowledgeReference } from '@/services/tools';
+import ProfilePicture from './ProfilePicture';
+
 
 interface ChatInterfaceProps {
   messages: Message[];
@@ -16,6 +17,7 @@ interface ChatInterfaceProps {
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, addMessage, inputMessage, setInputMessage, handleSendMessage, handleClearMessages }) => {
+  
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto p-6">
@@ -29,11 +31,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, addMessage, inp
                   
                   {message.type === 'user' ? 
                     <User className="w-6 h-6 text-white" /> : 
-                    <img 
-                      src="izzypfp.png" 
-                      alt="Izzy's profile picture"
-                      className="w-6 h-6 rounded-full object-cover"
-                    />
+                    <ProfilePicture className='w-6 h-6 rounded-full object-cover'>
+                    </ProfilePicture>
                   }
                 </div>
                 <div className={`rounded-lg px-4 py-3 ${
@@ -115,7 +114,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, addMessage, inp
             <span className="hidden sm:inline">Clear</span>
           </button>
           <AgentCall
-            knowledge_reference={knowledgeReference}
             addMessage={addMessage}
             handleClearMessages={handleClearMessages}
             >

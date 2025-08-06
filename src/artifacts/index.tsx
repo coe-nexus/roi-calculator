@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { TabType, Message, CategoryType } from '../types';
 import { ApiProvider, useApiData } from '@/components/ApiProvider';
-import { config } from '@/config';
 import Sidebar from '@/components/Sidebar';
 import ChatInterface from '@/components/ChatInterface';
 import MaterialsExplorer from '@/components/MaterialsExplorer';
 import RepositoryView from '@/components/RepositoryView';
+import { initializeConfig } from '../config';
+
 
 const Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('home');
@@ -15,7 +16,7 @@ const Dashboard: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<CategoryType>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [chatId, setChatId] = useState(1);
-  const { materials, sendMessage, createChat } = useApiData();
+  const { materials, domainId, sendMessage, createChat } = useApiData();
 
 
   
@@ -52,7 +53,7 @@ const Dashboard: React.FC = () => {
       const response = await sendMessage({
         content: inputMessage,
         timestamp: new Date().toISOString(),
-        domain_ids: [parseInt(config.domainId)]
+        domain_ids: [domainId || 1]
       }, chatId);
 
       if (!response.body) {
@@ -182,6 +183,19 @@ const Dashboard: React.FC = () => {
 };
 
 const App: React.FC = () => {
+  const [isConfigLoaded, setIsConfigLoaded] = useState(false);
+
+  useEffect(() => {
+    initializeConfig().then(() => {
+      setIsConfigLoaded(true);
+    });
+  }, []);
+
+  if (!isConfigLoaded) {
+    return <div>Loading configuration...</div>;
+  }
+
+
   return (
     <ApiProvider>
       <Dashboard />

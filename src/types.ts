@@ -8,8 +8,28 @@ export interface Document {
   source: string | undefined;
 }
 
-export interface VectorDBQueryResponse {
-  response: string;
+export interface TenantRead {
+  tenant_id: number;
+  title: string;
+  name: string;
+  description: string | null;
+  elevenlabs_agent_id: string | null;
+  pfp_thumbnail: string | null;
+  pfp_medium: string | null;
+  pfp_large: string | null;
+  sys_prompt: string | null;
+  tier: string;
+}
+
+export interface DomainRead{
+  domain_id: number
+  name: string
+  description: string
+}
+    
+export interface TenantProfilePicture {
+  sasUrl: string;
+  expiresInSeconds: number;
 }
 
 export interface Keyword {

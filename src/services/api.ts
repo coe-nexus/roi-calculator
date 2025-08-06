@@ -1,15 +1,19 @@
 import axios from 'axios';
-import { config } from '../config'
+import { config, apiClient } from '../config'
 import axiosRetry from 'axios-retry'
-import { MessageData, Chat, VectorDBQueryResponse, Document, JWTInterface } from '@/types';
+import { MessageData, Chat, Document, JWTInterface, DomainRead, TenantProfilePicture } from '@/types';
 
-
-const apiClient = axios.create({
-    baseURL: config.serverApiUrl,
-    headers: {
-        'Content-Type': 'application/json',
+const domainId = 0;
+export const getDomainId = async () => {
+    if (domainId != 0) {
+        return domainId;
     }
-})
+    const response = await apiClient.get('domains')
+    const domains = response.data as DomainRead[]
+    const domain_default = domains[config.defaultDomainIndex]
+
+    return domain_default.domain_id
+}
 
 apiClient.interceptors.request.use((config) => {
     const token = localStorage.getItem("authToken")
@@ -56,7 +60,11 @@ async function getGuestToken() {
         
         // Create a separate axios instance for auth calls to avoid retry loop
         const authClient = axios.create({ baseURL: apiClient.defaults.baseURL });
-        const response = await authClient.get('auth/guest');
+        
+        console.log('tenant_id value:', config.tenant?.tenant_id);
+        console.log('tenant value:', config.tenant);
+
+        const response = await authClient.post('auth/guest', {"tenant_id": config.tenant?.tenant_id});
         const tokens: JWTInterface = response.data as JWTInterface;
         localStorage.setItem("authToken", tokens.access_token);
         return tokens.access_token;
@@ -70,7 +78,7 @@ async function getGuestToken() {
 // AKA Materials
 export const getDocuments = async () => {
     try {
-        const response = await apiClient.get(`/domains/${config.domainId}/documents`);
+        const response = await apiClient.get(`/domains/${await getDomainId()}/documents`);
         const documents: Document[] = response.data as Document[];
         return documents
         // find a way how to create a Document type here based on the data
@@ -82,7 +90,7 @@ export const getDocuments = async () => {
 
 export const getDocumentContent = async (document_id: number) => {
     try {
-        const response = await apiClient.get(`/domains/${config.domainId}/documents/${document_id}`);
+        const response = await apiClient.get(`/domains/${await getDomainId()}/documents/${document_id}`);
         const document: Document = response.data as Document;
         return document
     } catch (error) {
@@ -143,20 +151,16 @@ export const createChat = async (name: string) => {
     }
 }
 
-
-
-export const queryVectorDB = async (query: string) => {
+export const getTenantPfp = async (size: string = "thumbnail") => {
     try {
-        const response = await apiClient.post(
-            'domains/' + config.domainId + "/query",
-            {
-                query: query
+        const response = await apiClient.get('tenants/current/pfp', {
+            params: {
+                "size": size
             }
-        )
+        })
 
-        return response.data as VectorDBQueryResponse
+        return response.data as TenantProfilePicture
     } catch (e) {
-        console.log("Error when trying to query the vector database", e)
-        throw e
+        console.log ("Error when trying to get tenant profile picture", e)
     }
 }
