@@ -21,6 +21,27 @@ export interface TenantRead {
   tier: string;
 }
 
+export interface TenantUpdate {
+  title?: string | null;
+  description?: string | null;
+  elevenlabs_agent_id?: string | null;
+  sys_prompt?: string | null;
+}
+
+export interface UserRead {
+  user_id: number;
+  email: string;
+  name: string;
+}
+
+export interface PermissionRead {
+  permission_id: number;
+  name: string;
+  description: string;
+  resource: string;
+  action: string;
+}
+
 export interface DomainRead{
   domain_id: number
   name: string

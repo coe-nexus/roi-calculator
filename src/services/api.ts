@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { config, apiClient } from '../config'
 import axiosRetry from 'axios-retry'
-import { MessageData, Chat, Document, JWTInterface, DomainRead, TenantProfilePicture } from '@/types';
+import { MessageData, Chat, Document, JWTInterface, DomainRead, TenantProfilePicture, Material } from '@/types';
 
 const domainId = 0;
 export const getDomainId = async () => {
@@ -29,9 +29,9 @@ axiosRetry(apiClient, {
     retries: 3,
     retryDelay: (retryCount) => retryCount * 2000,
     retryCondition: (error) => {
-        // Only retry on 403/401 errors, not for getGuestToken calls
-        if (error.config?.url?.includes('auth/guest')) {
-            return false; // Don't retry guest token calls to avoid infinite loop
+        // Only retry on 403/401 errors, not for getGuestToken or login calls
+        if (error.config?.url?.includes('auth/guest') || error.config?.url?.includes('auth/login')) {
+            return false;
         }
         return error.response?.status === 403 || error.response?.status === 401;
     },
@@ -164,3 +164,28 @@ export const getTenantPfp = async (size: string = "thumbnail") => {
         console.log ("Error when trying to get tenant profile picture", e)
     }
 }
+
+
+export const addDocumentsToDomain = (domainId: number, formData: FormData) => {
+  return apiClient.post(`/domains/${domainId}/documents`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+};
+
+export const addUrlContentToDomain = (domainId: number, urlContent: { url: string, content_type: string }) => {
+  return apiClient.post(`/domains/${domainId}/url-content`, urlContent);
+};
+
+export const addTextContentToDomain = (domainId: number, textContent: { content: string, name: string, description: string }) => {
+    return apiClient.post(`/domains/${domainId}/documents`, textContent);
+};
+
+export const updateDocument = (domainId: number, docId: number, updateData: { name?: string, tags?: string[] }) => {
+  return apiClient.patch(`/domains/${domainId}/documents/${docId}`, updateData);
+};
+
+export const deleteDocument = (domainId: number, docId: number) => {
+  return apiClient.delete(`/domains/${domainId}/documents/${docId}`);
+};

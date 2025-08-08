@@ -15,6 +15,7 @@ interface ApiContextType {
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
+  refreshMaterials: () => Promise<void>;
   getDoc: (doc_id: number) => Promise<Document>;
   sendMessage: (msgData: MessageData, chatId: number) => Promise<Response>;
   getTenantPfp: typeof getTenantPfp;
@@ -121,6 +122,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
     loading,
     error,
     refetch: fetchData,
+    refreshMaterials: fetchData,
     getDoc: getDocumentContent,
     getTenantPfp,
     sendMessage: sendMessageStreaming,

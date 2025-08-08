@@ -1,9 +1,15 @@
-import React from 'react';
-import { Search, Filter, ChevronRight, Calendar, Clock, FileText, Globe, Tag, Video, Book } from 'lucide-react';
+import React, { useState } from 'react';
+import { Search, Filter, ChevronRight, Calendar, Clock, FileText, Globe, Tag, Video, Book, PlusCircle, Edit } from 'lucide-react';
 import { Material, CategoryType } from '../types';
 import { DocumentModal } from './DocumentModal';
+import { AddMaterialModal } from './AddMaterialModal';
+import { EditMaterialModal } from './EditMaterialModal';
 import { useDocumentModal } from '../hooks/useDocumentModal';
 import { useApiData } from './ApiProvider';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
+import { getDomainId, addDocumentsToDomain, addUrlContentToDomain, addTextContentToDomain, updateDocument, deleteDocument } from '@/services/api';
+
 
 interface MaterialsExplorerProps {
   materials: Material[] | null;
@@ -20,8 +26,89 @@ const MaterialsExplorer: React.FC<MaterialsExplorerProps> = ({
   searchTerm,
   setSearchTerm,
 }) => {
-  const { getDoc } = useApiData();
+  const { getDoc, refreshMaterials } = useApiData();
   const { openedDocument, loading, error, openModal, closeModal, isOpen } = useDocumentModal(getDoc);
+  const { hasPermission } = useAuth();
+  const [isAddModalOpen, setAddModalOpen] = useState(false);
+  const [isEditModalOpen, setEditModalOpen] = useState(false);
+  const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const handleAddFiles = async (files: File[]) => {
+    setUploading(true);
+    setUploadError(null);
+    try {
+      const domainId = await getDomainId();
+      const formData = new FormData();
+      files.forEach(file => formData.append('documents', file));
+      await addDocumentsToDomain(domainId, formData);
+      await refreshMaterials();
+      setAddModalOpen(false);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'An unknown error occurred');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleAddUrl = async (url: string) => {
+    setUploading(true);
+    setUploadError(null);
+    try {
+      const domainId = await getDomainId();
+      await addUrlContentToDomain(domainId, { url, content_type: 'website' });
+      await refreshMaterials();
+      setAddModalOpen(false);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'An unknown error occurred');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleAddText = async (text: string) => {
+    setUploading(true);
+    setUploadError(null);
+    try {
+        const domainId = await getDomainId();
+        await addTextContentToDomain(domainId, { content: text, name: "text snippet", description: 'document' });
+        await refreshMaterials();
+        setAddModalOpen(false);
+    } catch (err) {
+        setUploadError(err instanceof Error ? err.message : 'An unknown error occurred');
+    } finally {
+        setUploading(false);
+    }
+  };
+
+  const handleEditMaterial = (material: Material) => {
+    setSelectedMaterial(material);
+    setEditModalOpen(true);
+  };
+
+  const handleUpdateMaterial = async (id: number, name: string, tags: string[]) => {
+    try {
+      const domainId = await getDomainId();
+      await updateDocument(domainId, id, { name, tags });
+      await refreshMaterials();
+      setEditModalOpen(false);
+    } catch (err) {
+      console.error("Failed to update material", err);
+    }
+  };
+
+  const handleDeleteMaterial = async (id: number) => {
+    try {
+      const domainId = await getDomainId();
+      await deleteDocument(domainId, id);
+      await refreshMaterials();
+      setEditModalOpen(false);
+    } catch (err) {
+        console.error("Failed to delete material", err);
+    }
+  };
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -131,15 +218,49 @@ const MaterialsExplorer: React.FC<MaterialsExplorerProps> = ({
                   ))}
                 </div>
                 
-                <button onClick={() => openModal(material.id)} className="w-full py-2 text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center justify-center gap-1">
-                  View Material
-                  <ChevronRight className="w-4 h-4" />
-                </button>
+                <div className="flex justify-between items-center mt-4">
+                  <button onClick={() => openModal(material.id)} className="py-2 text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center justify-center gap-1">
+                    View Material
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                  {hasPermission('domain.update', `domain:${materials?.[0]?.id || 1}`) && (
+                    <Button variant="ghost" size="sm" onClick={() => handleEditMaterial(material)}>
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
         </div>
       </div>
+
+      {hasPermission('domain.update', `domain:${materials?.[0]?.id || 1}`) && (
+        <div className="fixed bottom-6 right-6">
+          <Button onClick={() => setAddModalOpen(true)} className="rounded-full h-16 w-16 flex items-center justify-center shadow-lg">
+            <PlusCircle className="h-8 w-8" />
+          </Button>
+        </div>
+      )}
+
+      <AddMaterialModal
+        isOpen={isAddModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onAddFiles={handleAddFiles}
+        onAddUrl={handleAddUrl}
+        onAddText={handleAddText}
+        uploading={uploading}
+        uploadProgress={uploadProgress}
+        error={uploadError}
+      />
+
+      <EditMaterialModal
+        isOpen={isEditModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        material={selectedMaterial}
+        onSave={handleUpdateMaterial}
+        onDelete={handleDeleteMaterial}
+      />
 
       <DocumentModal
         document={openedDocument}

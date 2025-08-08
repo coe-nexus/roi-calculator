@@ -1,7 +1,9 @@
 import React from 'react';
-import { Home, Library, Network } from 'lucide-react';
+import { Home, Library, Network, LogIn, LogOut, Settings } from 'lucide-react';
 import { TabType } from '../types';
 import { config } from '../config';
+import { useAuth } from '../hooks/useAuth';
+import { Link } from 'react-router-dom';
 
 interface SidebarProps {
   activeTab: TabType;
@@ -18,6 +20,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   isOpen,
   setIsOpen
 }) => {
+  const { user, logout, hasPermission } = useAuth();
+
   return (
     <div
       className={`w-64 bg-white border-r border-gray-200 flex flex-col transform ${
@@ -80,6 +84,36 @@ const Sidebar: React.FC<SidebarProps> = ({
           <span className="font-medium">Repository</span>
         </button>
       </nav>
+      <div className="p-4 mt-auto border-t border-gray-200">
+        {user ? (
+          <>
+            {hasPermission('update', 'tenant') && (
+              <Link
+                to="/settings"
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors hover:bg-gray-100 text-gray-700"
+              >
+                <Settings className="w-5 h-5" />
+                <span className="font-medium">Settings</span>
+              </Link>
+            )}
+            <button
+              onClick={logout}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors hover:bg-gray-100 text-gray-700"
+            >
+              <LogOut className="w-5 h-5" />
+              <span className="font-medium">Logout</span>
+            </button>
+          </>
+        ) : (
+          <Link
+            to="/login"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors hover:bg-gray-100 text-gray-700"
+          >
+            <LogIn className="w-5 h-5" />
+            <span className="font-medium">Login</span>
+          </Link>
+        )}
+      </div>
     </div>
   );
 };
