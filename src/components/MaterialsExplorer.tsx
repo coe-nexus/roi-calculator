@@ -33,7 +33,7 @@ const MaterialsExplorer: React.FC<MaterialsExplorerProps> = ({
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadProgress, _] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   const handleAddFiles = async (files: File[]) => {

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { config, apiClient } from '../config'
 import axiosRetry from 'axios-retry'
-import { MessageData, Chat, Document, JWTInterface, DomainRead, TenantProfilePicture, Material } from '@/types';
+import { MessageData, Chat, Document, JWTInterface, DomainRead, TenantProfilePicture } from '@/types';
 
 const domainId = 0;
 export const getDomainId = async () => {
