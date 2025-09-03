@@ -58,7 +58,7 @@ const MaterialsExplorer: React.FC<MaterialsExplorerProps> = ({
     setUploadError(null);
     try {
       const domainId = await getDomainId();
-      await addUrlContentToDomain(domainId, { url, content_type: 'website' });
+      await addUrlContentToDomain(domainId, { url, content_type: 'auto' });
       await refreshMaterials();
       setAddModalOpen(false);
     } catch (err) {
